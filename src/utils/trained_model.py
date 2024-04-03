@@ -16,7 +16,7 @@ def read_model(path: Path) -> TrainedModel:
 
 
 def write_model(model: TrainedModel, path: Path):
-    path.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     with path.open("wb") as dest:
         pickle.dump(model, dest)

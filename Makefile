@@ -3,6 +3,11 @@
 include .env
 export
 
+clean:
+	rm -rf ./data
+	rm -rf ./models
+	rm -rf ./*.log
+
 download: venv
 	$(VENV)/python src/data/download_dataset.py
 
@@ -14,6 +19,9 @@ train: prepare
 
 test: train
 	$(VENV)/python src/models/test_model.py
+
+predict: train
+	$(VENV)/python src/models/predict.py $(filename)
 
 include Makefile.venv
 Makefile.venv:

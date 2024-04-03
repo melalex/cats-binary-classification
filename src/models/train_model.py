@@ -33,8 +33,6 @@ def train_model(
     x = adjust_shape(np.stack([prepare_image(it) for it in imgs]))
     y = np.array([extract_prediction(it) for it in imgs]).reshape((1, -1))
 
-    logger.info("Found [ %s ] training images", len(x))
-
     model = gradient_descent(x, y, learning_factor, iter_count, logger)
 
     logger.info("Saving trained model to [ %s ]", MODEL_PATH)
@@ -57,6 +55,8 @@ def gradient_descent(
     w = np.zeros((x.shape[0], 1))
     b = 0.0
 
+    logger.info("Found [ %s ] training images", m)
+
     for i in range(iter_count):
         a = logistic_regression(x, w, b)
 
@@ -65,7 +65,7 @@ def gradient_descent(
                 "Iteration # [ %s ] of [ %s ]. Cost is [ %s ]",
                 i,
                 iter_count,
-                calculate_cost(m, y, a),
+                calculate_cost(y, a),
             )
 
         dz = a - y
@@ -77,16 +77,8 @@ def gradient_descent(
     return TrainedModel(w, b)
 
 
-def calculate_cost(m: int, y: np.ndarray, a: np.ndarray) -> float:
-    loss = np.vectorize(calculate_loss)
-    return (-1 / m) * np.sum(loss(y, a))
-
-
-def calculate_loss(y: int, a: float):
-    if y == 0:
-        return math.log(1 - a)
-    else:
-        return math.log(a)
+def calculate_cost(y: np.ndarray, a: np.ndarray) -> float:
+    return -np.mean(y * np.log(a) + (1 - y) * np.log(1 - a))
 
 
 if __name__ == "__main__":
