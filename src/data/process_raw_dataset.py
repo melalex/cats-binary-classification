@@ -11,6 +11,7 @@ from definitions import (
     CATS_DATASET_NAME,
     IMAGE_HEIGHT,
     IMAGE_WIDTH,
+    LOG_PERIOD,
     LOGGING_CONFIG_PATH,
     RAW_DATA_FOLDER,
     SAMPLE_DATASET_NAME,
@@ -114,7 +115,7 @@ def write_to(source: list[Path], path: Path, logger: logging.Logger):
         img = Image.open(it)
         resized = img.resize((IMAGE_WIDTH, IMAGE_HEIGHT))
         resized.convert("RGB").save(new_file_name)
-        if i % 50 == 0:
+        if i % LOG_PERIOD == 0:
             logger.info("Prepared [ %s ] of [ %s ] images", i, img_count)
 
 

@@ -1,58 +1,55 @@
 from dataclasses import dataclass
+import math
 from pathlib import Path
-from PIL import Image
 
 import numpy as np
 import logging
 import logging.config
-import pickle
 
 from definitions import (
     ITERATION_COUNT,
     LEARNING_RATE,
+    LOG_PERIOD,
     LOGGING_CONFIG_PATH,
-    MODELS_FOLDER,
+    MODEL_PATH,
     TRAIN_DATA_FOLDER,
 )
-
-
-@dataclass
-class TrainedModel:
-    w: np.ndarray
-    b: float
+from utils.fun import logistic_regression
+from utils.image import extract_prediction, prepare_image, read_all_images_from
+from utils.trained_model import TrainedModel, write_model
 
 
 def train_model(
     dataset: Path, learning_factor: float, iter_count: int, logger: logging.Logger
 ):
-    imgs = [it for it in dataset.iterdir()]
-    x = np.array([read_image(it) for it in imgs])
-    y = np.array([1 if "Y" in it.stem else 0 for it in imgs])
+    if MODEL_PATH.is_file():
+        logger.info(
+            "Model file is present at [ %s ]. Skipping training ...", MODEL_PATH
+        )
+        return
+
+    imgs = read_all_images_from(dataset)
+
+    x = adjust_shape(np.stack([prepare_image(it) for it in imgs]))
+    y = np.array([extract_prediction(it) for it in imgs]).reshape((1, -1))
 
     logger.info("Found [ %s ] training images", len(x))
 
     model = gradient_descent(x, y, learning_factor, iter_count, logger)
-    model_path = (
-        MODELS_FOLDER / f"cats-binary-classification-{learning_factor}-{iter_count}.bin"
-    )
 
-    logger.info("Saving trained model to [ %s ]", model_path)
+    logger.info("Saving trained model to [ %s ]", MODEL_PATH)
 
-    with model_path.open("wb") as dest:
-        pickle.dump(model, dest)
+    write_model(model, MODEL_PATH)
 
 
-def read_image(it: Path) -> np.ndarray:
-    img = Image.open(it)
-    x = np.array(img)
-
-    return normalize_image(x.reshape(x.shape[0], -1).T)
+def adjust_shape(x: np.ndarray) -> np.ndarray:
+    return x.reshape(x.shape[0], -1).T
 
 
 def gradient_descent(
     x: np.ndarray,
     y: np.ndarray,
-    learning_factor: float,
+    learning_rate: float,
     iter_count: int,
     logger: logging.Logger,
 ) -> TrainedModel:
@@ -61,33 +58,35 @@ def gradient_descent(
     b = 0.0
 
     for i in range(iter_count):
-        z = logistic_regression(x, w, b)
-        a = sigmoid(z)
+        a = logistic_regression(x, w, b)
+
+        if i % LOG_PERIOD == 0 and logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "Iteration # [ %s ] of [ %s ]. Cost is [ %s ]",
+                i,
+                iter_count,
+                calculate_cost(m, y, a),
+            )
+
         dz = a - y
-        dw = (1 / m) * x * dz.T
+        dw = (1 / m) * np.dot(x, dz.T)
         db = (1 / m) * np.sum(dz)
-        w = w - learning_factor * dw
-        b = b - learning_factor * db
-        if i % 100 == 0 and logger.isEnabledFor(logging.INFO):
-            logger.info("Iteration # [ %s ]. Cost is [ %s ]", i, calculate_cost(y, a))
+        w = w - learning_rate * dw
+        b = b - learning_rate * db
 
     return TrainedModel(w, b)
 
 
-def calculate_cost(y: np.ndarray, y_predicted: np.ndarray) -> float:
-    return np.sum(y * np.log(y_predicted) + (1 - y) * np.log(1 - y_predicted))
+def calculate_cost(m: int, y: np.ndarray, a: np.ndarray) -> float:
+    loss = np.vectorize(calculate_loss)
+    return (-1 / m) * np.sum(loss(y, a))
 
 
-def logistic_regression(x: np.ndarray, w: np.ndarray, b: float) -> np.ndarray:
-    return np.dot(w.T, x) + b
-
-
-def sigmoid(z: np.ndarray) -> np.ndarray:
-    return 1 / (1 + np.exp(-z))
-
-
-def normalize_image(x: np.ndarray) -> np.ndarray:
-    return x / 255
+def calculate_loss(y: int, a: float):
+    if y == 0:
+        return math.log(1 - a)
+    else:
+        return math.log(a)
 
 
 if __name__ == "__main__":

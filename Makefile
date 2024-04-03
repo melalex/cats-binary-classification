@@ -12,6 +12,9 @@ prepare: download
 train: prepare
 	$(VENV)/python src/models/train_model.py
 
+test: train
+	$(VENV)/python src/models/test_model.py
+
 include Makefile.venv
 Makefile.venv:
 	curl \

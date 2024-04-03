@@ -27,6 +27,7 @@ def download_dataset(owner: str, name: str, logger: logging.Logger):
 
 
 def download_all_datasets(logger: logging.Logger):
+    RAW_DATA_FOLDER.mkdir(parents=True, exist_ok=True)
     kaggle.api.authenticate()
     download_dataset(CATS_DATASET_OWNER, CATS_DATASET_NAME, logger)
     download_dataset(SAMPLE_DATASET_OWNER, SAMPLE_DATASET_NAME, logger)
