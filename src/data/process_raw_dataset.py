@@ -8,12 +8,14 @@ import logging.config
 
 from definitions import (
     CAT_SAMPLE_RATIO,
+    CATS_DATASET_CONTENT_PATH,
     CATS_DATASET_NAME,
     IMAGE_HEIGHT,
     IMAGE_WIDTH,
     LOG_PERIOD,
     LOGGING_CONFIG_PATH,
     RAW_DATA_FOLDER,
+    SAMPLE_DATASET_CONTENT_PATH,
     SAMPLE_DATASET_NAME,
     TEST_DATA_FOLDER,
     TEST_TRAIN_RATIO,
@@ -27,8 +29,12 @@ def process_raw_dataset(logger: logging.Logger):
         logger.info("Dataset is already prepared. Skipping ...")
         return
 
-    cats_dataset_path = unzip_dataset(CATS_DATASET_NAME, logger) / "PetImages" / "Cat"
-    sample_dataset_path = unzip_dataset(SAMPLE_DATASET_NAME, logger) / "data"
+    cats_dataset_path = (
+        unzip_dataset(CATS_DATASET_NAME, logger) / CATS_DATASET_CONTENT_PATH
+    )
+    sample_dataset_path = (
+        unzip_dataset(SAMPLE_DATASET_NAME, logger) / SAMPLE_DATASET_CONTENT_PATH
+    )
     cat_images, sample_images = list_images(
         cats_dataset_path, sample_dataset_path, logger
     )
